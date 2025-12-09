@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <mysql.h>
 #include <string.h>
 #include <time.h>
 
@@ -21,7 +22,7 @@ struct routes {
 typedef struct DLIST {
     int length;
     liste beg, end;
-} *DOUBLE;
+} *DOUBLE_list;
 
 typedef struct buses buses;
 typedef buses *next;
@@ -118,7 +119,7 @@ void marquer_nondis(next p,int v){
 
 /* ===================== ROUTES ===================== */
 
-DOUBLE insererFin(DOUBLE L, int v,int bus,char T[]){
+DOUBLE_list insererFin(DOUBLE_list L, int v,int bus,char T[]){
     if(!L){
         L = malloc(sizeof(*L));
         L->length=0;
@@ -141,7 +142,7 @@ DOUBLE insererFin(DOUBLE L, int v,int bus,char T[]){
     return L;
 }
 
-void afficher(DOUBLE L){
+void afficher(DOUBLE_list L){
     if(!L){ printf("LISTE VIDE\n"); return; }
 
     int i=1;
@@ -152,28 +153,28 @@ void afficher(DOUBLE L){
         }
 }
 
-int route_existe(DOUBLE L,int v){
+int route_existe(DOUBLE_list L,int v){
     if(!L) return 0;
     for(liste p=L->beg; p; p=p->next)
         if(p->id==v) return 1;
     return 0;
 }
 
-int routes_disponible(DOUBLE L){
+int routes_disponible(DOUBLE_list L){
     if(!L) return 0;
     for(liste p=L->beg; p; p=p->next)
         if(p->disponible) return 1;
     return 0;
 }
 
-int Rdisponible(DOUBLE L,int v){
+int Rdisponible(DOUBLE_list L,int v){
     if(!L) return 0;
     for(liste p=L->beg; p; p=p->next)
         if(p->id==v && p->disponible) return 1;
     return 0;
 }
 
-void Rmarquer_nondis(DOUBLE L,int v){
+void Rmarquer_nondis(DOUBLE_list L,int v){
     if(!L) return;
     for(liste p=L->beg;p;p=p->next)
         if(p->id==v){ p->disponible=0; return; }
@@ -262,13 +263,38 @@ next saisie_buses(){ /* version nettoy e et v rifie unicit  des bus_id */
         printf("capacite : "); scanf("%d",&capa);
         getchar();
         printf("matricule : "); gets(MA);
+        /***********************************************/
+         MYSQL *con = mysql_init(NULL);
+    con = mysql_real_connect(con, "localhost", "root", "Uchihasasuke332#",
+                            "first_try", 0, NULL, 0);
+
+    if (!con) {
+        printf("Connexion echouee: %s\n", mysql_error(con));
+        getchar();
+      //  return 1;
+    }
+     char query[500];
+    sprintf(query, "INSERT INTO bus VALUES (%d, '%s', %d)",
+            bus_id, MA, capa);
+
+    if (mysql_query(con, query) == 0) {
+        printf(" Succes! Employe insere.\n");
+         // AJOUTEZ CES 2 LIGNES POUR LE COMMIT
+          mysql_query(con, "COMMIT");    // Force le commit immédiat
+        // FIN DE L'AJOUT
+
+        printf(" Donnees sauvegardees definitivement!\n");
+    } else {
+        printf(" Erreur: %s\n", mysql_error(con));
+    }
+    /***********************************************/
         L = insererF(L,bus_id,MA,capa);
     }
     return L;
 }
 
-DOUBLE saisie_routes(next L,int c){
-    DOUBLE R=NULL;
+DOUBLE_list saisie_routes(next L,int c){
+    DOUBLE_list R=NULL;
     char T[100];
     int id, bus;
 
@@ -299,13 +325,36 @@ DOUBLE saisie_routes(next L,int c){
         getchar();
         printf("itineraire : ");
         gets(T);
+        /***********************************************/
+          MYSQL *con = mysql_init(NULL);
+    con = mysql_real_connect(con, "localhost", "root", "Uchihasasuke332#",
+                            "first_try", 0, NULL, 0);
 
+    if (!con) {
+        printf("Connexion echouee: %s\n", mysql_error(con));
+        getchar();
+      //  return 1;
+    }
+        char query[500];
+    sprintf(query, "INSERT INTO route VALUES (%d, %d, '%s')",
+            id, bus, T);
+    if (mysql_query(con, query) == 0) {
+        printf(" Succes! Employe insere.\n");
+         // AJOUTEZ CES 2 LIGNES POUR LE COMMIT
+          mysql_query(con, "COMMIT");    // Force le commit immédiat
+        // FIN DE L'AJOUT
+
+        printf(" Donnees sauvegardees definitivement!\n");
+    } else {
+        printf(" Erreur: %s\n", mysql_error(con));
+    }
+    /***********************************************/
         R = insererFin(R,id,bus,T);
     }
     return R;
 }
 
-next_student saisie_ETUDIANTS(DOUBLE L,next B){
+next_student saisie_ETUDIANTS(DOUBLE_list L,next B){
     next_student E=NULL;
 
     while(routes_disponible(L)){
@@ -347,7 +396,31 @@ next_student saisie_ETUDIANTS(DOUBLE L,next B){
         /* assignation */
         b->capacite--;
         if(b->capacite==0) Rmarquer_nondis(L,d);
+        /***********************************************/
+ MYSQL *con = mysql_init(NULL);
+    con = mysql_real_connect(con, "localhost", "root", "Uchihasasuke332#",
+                            "first_try", 0, NULL, 0);
 
+    if (!con) {
+        printf("Connexion echouee: %s\n", mysql_error(con));
+        getchar();
+      //  return 1;
+    }
+     char query[500];
+    sprintf(query, "INSERT INTO etudiant VALUES (%d,%d)",
+            id,d);
+
+    if (mysql_query(con, query) == 0) {
+        printf(" Succes! Employe insere.\n");
+         // AJOUTEZ CES 2 LIGNES POUR LE COMMIT
+          mysql_query(con, "COMMIT");    // Force le commit immédiat
+        // FIN DE L'AJOUT
+
+        printf(" Donnees sauvegardees definitivement!\n");
+    } else {
+        printf(" Erreur: %s\n", mysql_error(con));
+    }
+    /***********************************************/
         E = insererFE(E,id,d,P->bus_id);
 
         printf("ajoute. places restantes %d\n", b->capacite);
@@ -356,7 +429,7 @@ next_student saisie_ETUDIANTS(DOUBLE L,next B){
         printf("autre etudiant ? (o/n) ");
         scanf(" %c",&r);
         if(r!='o') break;
-        clear_screen();
+      //  clear_screen();
     }
     return E;
 }
@@ -398,8 +471,8 @@ int main(){
     clear_screen();
     afficherREC(L);
 
-    DOUBLE R = saisie_routes(L, L->taille);
-    clear_screen();
+    DOUBLE_list R = saisie_routes(L, L->taille);
+   // clear_screen();
 
     next_student E = saisie_ETUDIANTS(R,L);
     afficheretudiant(E);
