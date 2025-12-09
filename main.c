@@ -1,399 +1,410 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-/*
- char T[N][20];
-    int r=0;
-    for(int i=0;i<N;i++){
-            printf("arret %d",i);
-            gets(T[i++]);
-          printf("voulez inserer une autre arret");
-          scanf("%d",&r);
-          getchar();
-while(r==0 && i<N){
-printf("arret %d",i);
-            gets(T[i++]);
-}
-if(r!=0)
-    break;
-}
-//afiicher
- for(int i=0;i<N;i++){
-            printf("arret %d",i);
-            puts(T[i++]);
+#include <time.h>
 
+void my_sleep(int milliseconds) {
+    clock_t start_time = clock();
+    while (clock() < start_time + milliseconds * (CLOCKS_PER_SEC / 1000));
 }
-*/
+
+/* ========================== STRUCTURES ========================== */
+
 typedef struct routes routes;
 typedef routes *liste;
-typedef struct routes{
-int id;
-int bus_id;
-char T[200];
-int disponible;
-//int nbre_etudiants;
-liste next;
-liste previous;
-}routes;
-/*************************************************/
-typedef struct DLIST{
- int length;
- liste beg;
- liste end;
-}*DOUBLE;
-/****************************************/
-/*************************************************/
-// je vais travailler avec LSL
+struct routes {
+    int id, bus_id, disponible;
+    char T[200];
+    liste next, previous;
+};
+
+typedef struct DLIST {
+    int length;
+    liste beg, end;
+} *DOUBLE;
+
 typedef struct buses buses;
 typedef buses *next;
-typedef struct buses{
-int bus_id;
-char Matricule[100];
-int capacite;
-int disponible;
-int taille;
-int nbre_etudiants;                /*********/
-next suiv;
-}buses;
-next insererT(next l,int v,char T[],int capa){
-next p;
-p=malloc(sizeof(buses));
-p->bus_id =v;
-p->disponible=1;
-strcpy(p->Matricule,T);
-p->capacite=capa;
-p->suiv=l;
-p->nbre_etudiants=0;                     /*********/
-if(l==NULL){
-p->taille=0;/***/
-}
-p->taille++;
-return p;
-}
+struct buses {
+    int bus_id, capacite, disponible, taille, nbre_etudiants;
+    char Matricule[100];
+    next suiv;
+};
 
-void afficherREC(next l){
-    if(l!=NULL){
- printf("le bus d'id %d a la capcaite de %d eleve  ",l->bus_id,l->capacite);
- printf("son matricule est : ");
- puts(l->Matricule);
- afficherREC(l->suiv);}
+typedef struct students students;
+typedef students *next_student;
+struct students {
+    int student_id, route_id, bus;
+    next_student suiv;
+};
+
+typedef struct presence presence;
+typedef presence *point;
+struct presence {
+    int student_id, present;
+    char date[11];
+    point suiv;
+};
+
+/* ===================== FONCTIONS BUSES ===================== */
+
+next insererT(next l,int v,char T[],int capa){
+    next p = malloc(sizeof(buses));
+    p->bus_id=v;
+    p->disponible=1;
+    strcpy(p->Matricule,T);
+    p->capacite=capa;
+    p->nbre_etudiants=0;
+    p->suiv=l;
+    p->taille = (l==NULL ? 1 : l->taille+1);
+    return p;
 }
 
 next insererF(next l,int v,char T[],int capa){
-    if(l==NULL)
-        return insererT(l,v,T,capa);
-    else {
-next p,q;
-p=malloc(sizeof(buses));
-p->bus_id =v;
-p->disponible=1;/*********/
-strcpy(p->Matricule,T);
-p->capacite=capa;
-p->nbre_etudiants=0;                    /*********/
-p->suiv=NULL;
-q=l;
-while((q->suiv)!=NULL){
-    q=q->suiv;
-}
-l->taille++;/***/
-q->suiv=p;
-return l;
-    }
-}
-/********************Y-a-t-il de bus DISPONIBLE********************************/
-int buses_disponible(next L){
-next p=L;
-while(p!=NULL){
-    if(p->disponible==1)
-        return 1;
-    p=p->suiv;
-}
-return 0;
+    if(l==NULL) return insererT(l,v,T,capa);
+
+    next p = malloc(sizeof(buses)), q=l;
+    p->bus_id=v;
+    p->disponible=1;
+    strcpy(p->Matricule,T);
+    p->capacite=capa;
+    p->nbre_etudiants=0;
+    p->suiv=NULL;
+
+    while(q->suiv) q=q->suiv;
+    q->suiv=p;
+    l->taille++;
+    return l;
 }
 
-/********************BUS DISPONIBLE********************************/
-int disponible(next L,int v){
-next p=L;
-while(p!=NULL){
-        if(p->bus_id==v){
-    if(p->disponible==1)
-        return 1;
-        }
-    p=p->suiv;
-}
-return 0;
-}
-/********************MARQUE BUS NON DISPONIBLE********************************/
-void marquer_nondis(next L,int v){
-next p=L;
-while(p!=NULL){
-        if(p->bus_id==v){
-    p->disponible=0;
-        break;
-        }
-    p=p->suiv;
-}
-//return L;
-}
-/***********************BUS--EXISTE*******************************/
-int bus_existe(next L,int v){
- next p=L;
-while(p!=NULL){
-    if(p->bus_id==v)
-        return 1;
-    p=p->suiv;
-}
-return 0;
+void afficherREC(next l){
+    if(l){
+        printf("Bus %d | capacite %d | matricule: ", l->bus_id, l->capacite);
+        puts(l->Matricule);
+        afficherREC(l->suiv);
+    }
 }
 
-/**RETOURNER LISTE VIDE**/
-DOUBLE newdlisrt(void){
- return NULL;
-}
-/****************************************/
-/**LISTE VIDE OU PAS**/
-int estvide(DOUBLE L){
- return L==NULL;
-}
-/****************************************/
-/**RECUPERER LA LONGUEUR**/
-int longueur(DOUBLE L){
-return L->length;
-}
-/****************************************/
-/**AFFICHAGE**/
-void afficher(DOUBLE L){
- if(estvide(L))
-    printf("LISTE VIDEEEEE aucune route");
- else{
-        int i=1;
-    liste q=L->beg;
-    while(q!=NULL){
-            if(q->disponible){
-            if(q->bus_id)
-        printf("%d- l'tineraire du bus %d de la route %d a un itinairere : ",i++,q->bus_id,q->id);
-        else
-         printf("%d- pas de bus pour la route %d qui a un itinairere : ",i++,q->id);
-        puts(q->T);
-        q=q->next;
+int buses_disponible(next p){
+    while(p){
+        if(p->disponible) return 1;
+        p=p->suiv;
     }
-    else
-    q=q->next;
- }
+    return 0;
 }
-}
-/****************************************/
-/**AFFICHAGE INVERSE**/
-void afficherinverse(DOUBLE L){
- if(estvide(L))
-    printf("LISTE VIDEEEEE");
- else{
-    liste q=L->end;
-    while(q!=NULL){
-        printf("la route %d du bus %d a un itinairere : ",q->id,q->bus_id);
-        puts(q->T);
-        q=q->previous;
+
+int bus_existe(next p,int v){
+    while(p){
+        if(p->bus_id==v) return 1;
+        p=p->suiv;
     }
- }
+    return 0;
 }
-/****************************************/
+
+int disponible(next p,int v){
+    while(p){
+        if(p->bus_id==v && p->disponible) return 1;
+        p=p->suiv;
+    }
+    return 0;
+}
+
+void marquer_nondis(next p,int v){
+    while(p){
+        if(p->bus_id==v){ p->disponible=0; return; }
+        p=p->suiv;
+    }
+}
+
+/* ===================== ROUTES ===================== */
+
 DOUBLE insererFin(DOUBLE L, int v,int bus,char T[]){
- if(estvide(L)){
-       //  L=malloc(sizeof(struct DLIST));
-       /**************************/
-    L=malloc(sizeof(*L));
-    L->end=NULL;
-    L->beg=NULL;
-    liste p=malloc(sizeof(routes));
+    if(!L){
+        L = malloc(sizeof(*L));
+        L->length=0;
+        L->beg=L->end=NULL;
+    }
+
+    liste p = malloc(sizeof(routes));
     p->id=v;
     p->bus_id=bus;
     p->disponible=1;
-     strcpy(p->T,T);
+    strcpy(p->T,T);
     p->next=NULL;
-   p->previous=L->end;
-    L->beg=p;
-    L->end=p;
-    L->length=0;
-
- }
-else{
-          liste p=malloc(sizeof(routes));
-     p->id=v;
-    p->bus_id=bus;
-    p->disponible=1;
-  strcpy(p->T,T);
     p->previous=L->end;
-    p->next=NULL;
-    L->end->next=p;
+
+    if(L->end) L->end->next=p;
+    else L->beg=p;
+
     L->end=p;
+    L->length++;
+    return L;
+}
 
+void afficher(DOUBLE L){
+    if(!L){ printf("LISTE VIDE\n"); return; }
+
+    int i=1;
+    for(liste q=L->beg; q; q=q->next)
+        if(q->disponible){
+            printf("%d- Route %d | Bus %d | itineraire: ", i++, q->id, q->bus_id);
+            puts(q->T);
+        }
 }
- L->length++;
-return L;
+
+int route_existe(DOUBLE L,int v){
+    if(!L) return 0;
+    for(liste p=L->beg; p; p=p->next)
+        if(p->id==v) return 1;
+    return 0;
 }
-/**********************************************************/
-void clear_screen() {
-    system("cls");
+
+int routes_disponible(DOUBLE L){
+    if(!L) return 0;
+    for(liste p=L->beg; p; p=p->next)
+        if(p->disponible) return 1;
+    return 0;
 }
-/************************SAISIE DE BUS***************************************/
-next saisie_buses(){
-  int n;
-printf("combien de bus ? : ");
-scanf("%d",&n);
+
+int Rdisponible(DOUBLE L,int v){
+    if(!L) return 0;
+    for(liste p=L->beg; p; p=p->next)
+        if(p->id==v && p->disponible) return 1;
+    return 0;
+}
+
+void Rmarquer_nondis(DOUBLE L,int v){
+    if(!L) return;
+    for(liste p=L->beg;p;p=p->next)
+        if(p->id==v){ p->disponible=0; return; }
+}
+
+/* ===================== ETUDIANTS ===================== */
+
+next_student insererFE(next_student l,int v,int rID,int bus){
+    next_student p = malloc(sizeof(students)), q=l;
+    p->student_id=v;
+    p->route_id=rID;
+    p->bus=bus;
+    p->suiv=NULL;
+
+    if(!l) return p;
+    while(q->suiv) q=q->suiv;
+    q->suiv=p;
+    return l;
+}
+
+void afficheretudiant(next_student l){
+    for(;l;l=l->suiv)
+        printf("etudiant %d -> route %d\n", l->student_id, l->route_id);
+}
+
+void afficheretudiantbus(next_student l,int v){
+    for(;l;l=l->suiv)
+        if(l->bus==v)
+            printf("etudiant %d -> route %d bus %d\n",l->student_id,l->route_id,l->bus);
+}
+
+/* ===== V rification d'unicit  pour  tudiants ===== */
+int student_existe(next_student l, int id){
+    while(l){
+        if(l->student_id==id) return 1;
+        l=l->suiv;
+    }
+    return 0;
+}
+
+/* ===================== PRESENCE ===================== */
+
+point insererFEP(point l,int v,char T[],int pr){
+    point p = malloc(sizeof(presence)), q=l;
+    strcpy(p->date,T);
+    p->present=pr;
+    p->student_id=v;
+    p->suiv=NULL;
+
+    if(!l) return p;
+    while(q->suiv) q=q->suiv;
+    q->suiv=p;
+    return l;
+}
+
+void afficheerpresence(point L){
+    if(!L) return;
+    printf("DATE : ");
+    puts(L->date);
+
+    for(point p=L;p;p=p->suiv)
+        printf("etudiant %d : %s\n",p->student_id,p->present?"PRESENT":"ABSENT");
+}
+
+void clear_screen(){ system("cls"); }
+
+/* ===================== SAISIES (raccourcies) avec unicit  ===================== */
+/* ======= Les versions simplifi es (moins de r p titions) ======= */
+
+next saisie_buses(){ /* version nettoy e et v rifie unicit  des bus_id */
+    int n;
+    printf("combien de bus ? : ");
+    scanf("%d",&n);
+
     next L=NULL;
-    char MA[100],r='o';
-    int c=0;//pour ne depasse pas le nbre de bus
-    //int t=1;//qaund on dit on veut inserer n bus mais on insere aucun on tombe b inf/****/
-    int capacite,bus_id;
-    while(c<n && r=='o'){
-    printf("voulez inserer un bus (o/n) : ");
-    scanf(" %c",&r);
-    if(r=='o'){
-             do{
-    printf("le bus id : ");
-   scanf("%d",&bus_id);
-   if(bus_id==0)
-    printf("bus id doit etre diff de 0\n");
-             }while(bus_id==0);
-    //BUSES_ID[i++]=bus_id;
-   printf("donner la capacite du bus  : ");
-   scanf("%d",&capacite);
-   getchar();
-    printf("la matricule : ");
-   gets(MA);
-         L=insererF(L,bus_id,MA,capacite);
-     c++;
-     if(c<n){/***/
-    do{
+    char MA[100];
+    int bus_id, capa;
 
-    printf("voulez inserer un autre bus (o/n) : ");
-    scanf(" %c",&r);
-        if(r=='o'){
-    printf("le bus id : ");
-   scanf("%d",&bus_id);
-  // t++;
-   printf("donner la capacite du bus  : ");
-   scanf("%d",&capacite);
-   getchar();
-    printf("la matricule : ");
-   gets(MA);
-        L=insererF(L,bus_id,MA,capacite);
-     c++;
-            }
-    }while(r=='o' && c<n);
-     }/***/
-    }
-    else {
-        //t=0;
-     break;
-    }
-   // }
+    for(int i=0;i<n;i++){
+        do{
+            printf("bus id : "); scanf("%d",&bus_id);
+            if(bus_existe(L,bus_id)) printf("Erreur: bus_id %d deja existe. Choisir un autre.\n", bus_id);
+            else break;
+        } while(1);
+
+        printf("capacite : "); scanf("%d",&capa);
+        getchar();
+        printf("matricule : "); gets(MA);
+        L = insererF(L,bus_id,MA,capa);
     }
     return L;
 }
-/*******************SAISE ROUTES***************************/
+
 DOUBLE saisie_routes(next L,int c){
-    int i=0;
-    while(i<c){
-char r;
-    printf("passons aux routes\n");
     DOUBLE R=NULL;
     char T[100];
-    int id,bus_idr;
-    printf("voulez inserer une route (o/n) : ");
-    scanf(" %c",&r);
-    if(r=='o'){
-    printf("donner l'id de la route : ");
-   scanf("%d",&id);
-   bus_idr=0;
-   int v=0;
-if(buses_disponible(L) && i<c){
-   do{                                            /****/
-  printf("donner le bus id : ");
-   scanf("%d",&bus_idr);
- if(bus_existe(L,bus_idr)){
-        if(disponible(L,bus_idr)){
-        marquer_nondis(L,bus_idr);
-       v=1;
-       i++;
-        }
-       else{
-        printf("deja ocuupe\n");
-       }
- }
-else{
-    printf("le buses id n'existe pas\n");
-}
-   }while(v==0 &&  i<c);
-}
-//else
-  //  printf("pas de bus disponible\n");
-   getchar();
-    printf("l'itineraire : ");
-   gets(T);
-     R=insererFin(R,id,bus_idr,T);
-/****************************************/
+    int id, bus;
 
-    do{
-            if(i<c){
-    printf("voulez inserer une autre route (o/n) : ");
-    scanf(" %c",&r);
-        if(r=='o' && i<c){
-   printf("donner l'id de la route : ");
-   scanf("%d",&id);
-    bus_idr=0;
-  int v=0;
-   if(buses_disponible(L) && i<c){
-   do{                                            /****/
-   printf("donner le bus id : ");
-   scanf("%d",&bus_idr);
- if(bus_existe(L,bus_idr)){
-        if(disponible(L,bus_idr)){
-        marquer_nondis(L,bus_idr);
-       v=1;
-       i++;
+    for(int i=0;i<c;i++){
+        /* id de route unique dans R */
+        do{
+            printf("Route id : ");
+            scanf("%d",&id);
+            if(route_existe(R,id)) printf("Erreur: route id %d deja existe. Choisir un autre.\n", id);
+            else break;
+        } while(1);
+
+        bus=0;
+        if(buses_disponible(L)){
+            do{
+                printf("bus id : ");
+                scanf("%d",&bus);
+                if(bus_existe(L,bus) && disponible(L,bus)){
+                    marquer_nondis(L,bus);
+                    break;
+                }
+                printf("bus invalide ou occupe\n");
+            }while(1);
+        } else {
+            printf("Aucun bus disponible pour lier   la route %d\n", id);
         }
-       else{
-        printf("deja ocuupe\n");
-       }
- }
-else{
-    printf("le buses id n'existe pas\n");
-}
-   }while(v==0 && i<c);
-   }
-else
-    printf("pas de bus disponible\n");
-   getchar();
-    printf("l'itineraire : ");
-   gets(T);
-        R=insererFin(R,id,bus_idr,T);
-        }
+
+        getchar();
+        printf("itineraire : ");
+        gets(T);
+
+        R = insererFin(R,id,bus,T);
     }
-    }while(r=='o'  && i<c);
-        }
-      return R;
-    }
-
+    return R;
 }
 
-/********************************************************************/
-int main()
-{
-next L=saisie_buses();
+next_student saisie_ETUDIANTS(DOUBLE L,next B){
+    next_student E=NULL;
+
+    while(routes_disponible(L)){
+        afficher(L);
+        printf("choisir route pour inserer un etudiant: ");
+        int d; scanf("%d",&d);
+
+        if(!route_existe(L,d) || !Rdisponible(L,d)){
+            printf("route invalide ou non disponible\n");
+            continue;
+        }
+
+        liste P=L->beg;
+        while(P && P->id!=d) P=P->next;
+
+        next b=B;
+        while(b && b->bus_id!=P->bus_id) b=b->suiv;
+
+        if(!b){
+            printf("erreur: aucun bus trouve pour la route\n");
+            continue;
+        }
+
+        if(b->capacite<=0){
+            printf("le bus %d est plein\n", b->bus_id);
+            Rmarquer_nondis(L,d);
+            continue;
+        }
+
+        int id;
+        /* verifier unicite etudiant */
+        do{
+            printf("id etudiant : ");
+            scanf("%d",&id);
+            if(student_existe(E,id)) printf("Erreur: etudiant id %d deja existe. Choisir un autre.\n", id);
+            else break;
+        } while(1);
+
+        /* assignation */
+        b->capacite--;
+        if(b->capacite==0) Rmarquer_nondis(L,d);
+
+        E = insererFE(E,id,d,P->bus_id);
+
+        printf("ajoute. places restantes %d\n", b->capacite);
+
+        char r;
+        printf("autre etudiant ? (o/n) ");
+        scanf(" %c",&r);
+        if(r!='o') break;
+        clear_screen();
+    }
+    return E;
+}
+
+void marque_presence(next B,next_student E){
     clear_screen();
-    if(L){
-    printf("les %d buses disponibles : \n",L->taille);
-    afficherREC(L);
+    afficherREC(B);
+
+    int d;
+    do{
+        printf("bus id pour presence : ");
+        scanf("%d",&d);
+    }while(!bus_existe(B,d));
+
+    afficheretudiantbus(E,d);
+
+    char T[10];
+    printf("date AAAA-MM-DD : ");
+    getchar();
+    gets(T);
+
+    point A=NULL;
+    for(next_student p=E;p;p=p->suiv){
+        if(p->bus==d){
+            int x;
+            printf("etudiant %d present(1/0) : ",p->student_id);
+            scanf("%d",&x);
+            A = insererFEP(A,p->student_id,T,x);
+        }
     }
-    else
-        printf("pas de buses disponible donc on peut pas assigne les etudinats\n");
-DOUBLE Y=saisie_routes(L,L->taille);
-clear_screen();
 
-    afficher(Y);
+    afficheerpresence(A);
+}
 
+/* ===================== MAIN ===================== */
 
+int main(){
+    next L = saisie_buses();
+    clear_screen();
+    afficherREC(L);
+
+    DOUBLE R = saisie_routes(L, L->taille);
+    clear_screen();
+
+    next_student E = saisie_ETUDIANTS(R,L);
+    afficheretudiant(E);
+
+    marque_presence(L,E);
 
     return 0;
 }
